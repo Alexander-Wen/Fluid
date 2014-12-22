@@ -1,114 +1,331 @@
 using System;
 using System.IO;
 
-class FileStream
+//this will hold all the information about each body
+public class Node
 {
-    //counts the number of sections
-    static int countSec(string fileName)
+    object data;
+    Node next;
+
+    public Node(object val, Node nxt)
     {
-        StreamReader file = new StreamReader(fileName);
-        int num = 0;
-        while (!file.EndOfStream)
-        {
-            string line = file.ReadLine().Trim();
-            if (line.StartsWith("{{") && line.EndsWith("}}") && !line.StartsWith(@"{{ \"))
-                num++;
-        }
-        return num;
+        data = val;
+        next = nxt;
+    }
+    public object Data
+    {
+        get { return data; }
+        set { data = value; }
+    }
+    public Node Next
+    {
+        get { return next; }
+        set { next = value; }
+    }
+}
+
+//this is the linked list for the body class
+class Body
+{
+    Node head;
+    Node tail;
+
+    public Body()
+    {
+        head = tail = null;
     }
 
-    //returns the titles of all the sections
-    static string[] findTitle(string fileName, int size)
+    public void Append(object obj)
     {
-        StreamReader file = new StreamReader(fileName);
-        string[] ar = new string[size];
-        int counter = 0;
-        while (!file.EndOfStream)
+        Node temp = new Node(obj, null);
+        if (head == null)
         {
-            string line = file.ReadLine().Trim();
-            if (line.StartsWith("{{") && line.EndsWith("}}") && !line.StartsWith(@"{{ \"))
-            {
-                string[] splitLine = line.Split(' ');
-                int max = splitLine.Length - 1;
-                for (int i = 1; i < max; i++)
-                    ar[counter] += (splitLine[i] + " ");
-                ar[counter] = ar[counter].Trim();
-                counter++;
-            }
+            head = tail = temp;
         }
-        return ar;
+        else
+        {
+            tail.Next = temp;
+            tail = temp;
+        }
     }
+
+    public Node removeSecond()
+    {
+        if (head.Next == null) return null;
+        Node second = head.Next;
+        head.Next = head.Next.Next;
+        return second;
+    }
+    public Node returnSecond()
+    {
+        if (head.Next == null) return null;
+        return head.Next;
+    }
+
+    public Node returnFirst()
+    {
+        if (head == null) return null;
+        return head;
+    }
+
+    public bool isAlmostEmpty()
+    {
+        return (head.Next == null);
+    }
+}
+
+class BodyNode
+{
+    string menu;
+    string title;
+
+    public BodyNode(string a, string b)
+    {
+        menu = a;
+        title = b;
+    }
+    public string Menu
+    {
+        get { return menu; }
+        set { menu = value; }
+    }
+    public string Title
+    {
+        get { return title; }
+        set { title = value; }
+    }
+}
+
+class ContentNode
+{
+    char type;
+    string title;
+    string content;
+
+    public ContentNode (char t, string a, string b)
+    {
+        type = t;
+        title = a;
+        content = b;
+    }
+    public char Type
+    {
+        get { return type; }
+        set { type = value; }
+    }
+    public string Title
+    {
+        get { return title; }
+        set { title = value; }
+    }
+    public string Content
+    {
+        get { return content; }
+        set { content = value; }
+    }
+}
+
+class Fluid
+{
     static void Main()
     {
-        string bf = @"C:\Users\Alex Wen\Desktop\nginx-1.7.6\html\body.html";
+        string bf = @"body.bd";
         StreamReader bodyFile = new StreamReader(bf);
 
-        //this finds how many sections there are
-        int numSections = countSec(bf); //this works
-        Console.WriteLine(numSections);
-
-        //this finds the names of all the titles
-        string[] sectionTitle = findTitle(bf, numSections); //this works
-
-        for (int i = 0; i < numSections; i++)
+        //this takes the entire file and turns it into a single string
+        string file = null;
+        while (!bodyFile.EndOfStream)
         {
-            string outFile = @"C:\Users\Alex Wen\Desktop\nginx-1.7.6\html\" + sectionTitle[i] + @"\";
-            Directory.CreateDirectory(outFile);
-            outFile += @"index.html";
+            file += bodyFile.ReadLine();
+        }
+        Console.WriteLine("File successfully read");
+        string[] bodies = file.Split(new string[] {">body"}, StringSplitOptions.None);
+        Console.WriteLine("File successfully split by {0}", ">body");
 
-            StreamWriter writeFile = new StreamWriter(outFile);
-            StreamReader templateFile = new StreamReader(@"C:\Users\Alex Wen\Desktop\nginx-1.7.6\html\index.templ");
+        //the first bodies will be empty, so i just shifted everything down 1
+        for (int i = 0; i < bodies.Length - 1; i++)
+        {
+            bodies[i] = bodies[i + 1];
+            bodies[i] = bodies[i].Trim();
+        }
+        bodies[bodies.Length - 1] = null;
 
-            while (!templateFile.EndOfStream)
+        Body[] list = new Body[bodies.Length - 1];
+
+        for (int i = 0; i < bodies.Length - 1; i++)
+        {
+            //this takes out the body
+            string title = null;
+            string subtitle = null;
+            body(ref bodies[i], out title, out subtitle);
+            BodyNode tmp = new BodyNode(title, subtitle);
+
+            //i initialize the linked list before i append stuff to it
+            list[i] = new Body();
+            list[i].Append(tmp);
+
+            //this takes care of the content of the body
+            while (bodies[i] != null)
             {
-                string line = templateFile.ReadLine();
-                string trimmedLine = line.Trim();
-                if (trimmedLine == "{{ body }}")
+                if (bodies[i].StartsWith(">content"))
                 {
-                    bodyFile = new StreamReader(bf);
-                    while (!bodyFile.EndOfStream)
-                    {
-                        line = bodyFile.ReadLine();
-                        trimmedLine = line.Trim();
-                        if (trimmedLine == ("{{ " + sectionTitle[i] + " }}"))
-                        {
-                            line = bodyFile.ReadLine();
-                            trimmedLine = line.Trim();
-                            while (trimmedLine != (@"{{ \" + sectionTitle[i] + " }}"))
-                            {
-                                writeFile.WriteLine(line);
-                                line = bodyFile.ReadLine();
-                                trimmedLine = line.Trim();
-                            }
-                            break;
-                        }
-                    }
+                    string head = null;
+                    string stuff = null;
+                    content(ref bodies[i], out head, out stuff);
+                    ContentNode temp = new ContentNode('c', head, stuff);
+                    list[i].Append(temp);
                 }
-                else if (trimmedLine == "{{ menu }}")
+                else if (bodies[i].StartsWith(">picture"))
                 {
-
-                    for (int j = 0; j < numSections; j++)
-                    {
-                        writeFile.Write("<tr class=\"menu\"");
-                        if (i == j)
-                            writeFile.Write("style=\"background-color: #444;\"");
-                        writeFile.WriteLine(">");
-                        writeFile.WriteLine("   <td class=\"menu\">");
-                        writeFile.WriteLine("       <a class=\"button\" href=\"/" + sectionTitle[j] + "/\">");
-                        writeFile.WriteLine("           <span style=\"width: 128px; display:inline-block;\">" + sectionTitle[j] + "</span>");
-                        writeFile.WriteLine(@"      </a>");
-                        writeFile.WriteLine(@"  </td>");
-                        writeFile.WriteLine(@"</tr>");
-                    }
-
+                    ContentNode temp1 = new ContentNode('p',"",picture(ref bodies[i]));
+                    list[i].Append(temp1);
                 }
                 else
                 {
-                    writeFile.WriteLine(line);
+                    break;
                 }
             }
+            Console.WriteLine("Done reading body " + i);
+        }
 
+        //make the index redirect
+        BodyNode b = list[0].returnFirst().Data as BodyNode;
+        StreamWriter wf = new StreamWriter(@"index.html");
+
+        wf.WriteLine("<html>");
+        wf.WriteLine("<head>");
+        wf.WriteLine("<META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL=/" + b.Menu + "/index.html\">");
+        wf.WriteLine("</head>");
+        wf.WriteLine("</html>");
+
+        wf.Close();
+        //reading the body file
+        for (int i = 0; i < bodies.Length - 1; i++)
+        {
+            //removes the first line
+            BodyNode bod = list[i].returnFirst().Data as BodyNode;
+
+            //make a new folder
+            string outFile = bod.Menu + @"\";
+            Directory.CreateDirectory(outFile);
+            //make the index file
+            outFile += @"index.html";
+            Console.WriteLine("\"{0}\" folder created successfully", bod.Menu);
+
+            StreamWriter writeFile = new StreamWriter(outFile);
+
+            //for reading the template file
+            string tf = @"template.tmpl";
+            StreamReader tempFile = new StreamReader(tf);
+
+            while (!tempFile.EndOfStream)
+            {
+                string lin = tempFile.ReadLine();
+                string trimlin = lin.Trim();
+                if (trimlin == ">navigation<")
+                {
+                    for (int j = 0; j < bodies.Length - 1; j++)
+                    {
+                        BodyNode tempBody = list[j].returnFirst().Data as BodyNode;
+                        writeFile.Write("                   ");
+                        if (i == j)
+                        {
+                            writeFile.WriteLine("<li class=\"active\"><a href=\"\">" + tempBody.Menu + "</a></li>");
+                        }
+                        else
+                        {
+                            writeFile.WriteLine("<li><a href=\"../" + tempBody.Menu + "/index.html\">" + tempBody.Menu + "</a></li>");
+                        }
+                    }
+                }
+                else if (trimlin == ">content<")
+                {
+                    writeFile.WriteLine("<p id=\"content-title\">");
+                    writeFile.WriteLine("<b>" + bod.Title + "</b>");
+                    writeFile.WriteLine("</p>");
+
+                    while (!list[i].isAlmostEmpty())
+                    {
+                        ContentNode tc = list[i].returnSecond().Data as ContentNode;
+                        list[i].removeSecond();
+                        
+                        if (tc.Type == 'c')
+                        {
+                            writeFile.WriteLine("<h2>" + tc.Title + "</h2>");
+                            writeFile.WriteLine("<p id=\"content-text\">");
+                            writeFile.WriteLine(tc.Content);
+                            writeFile.WriteLine("</p>");
+                        }
+                        
+                        if (tc.Type == 'p')
+                        {
+                            writeFile.WriteLine(tc.Content);
+                        }
+                        
+                    }
+                }
+                else
+                {
+                    writeFile.WriteLine(lin);
+                }
+            }
             writeFile.Close();
         }
+
+        Console.WriteLine("done");
+    }
+
+    static void body(ref string body, out string first, out string second)
+    {
+        //finds the first instance of a close bracket
+        int i = 0;
+        while (body[i] != ')') { i++; }
+
+        //copies the parameters of the body
+        string sub = body.Substring(0, i + 1);
+        body = body.Replace(sub, "").Trim();
+
+        //removes all the unnecessary stuff
+        sub = sub.Replace("(", "").Replace(")", "").Replace("\"", "");
+
+        //assigns the other parameters
+        string[] subs = sub.Split(',');
+        first = subs[0].Trim();
+        second = subs[1].Trim();
+    }
+
+    static void content(ref string body, out string first, out string second)
+    {
+        //finds the end of the content section
+        int i = 0;
+        while (body[i] != '<') { i++; }
+
+        //copies the content
+        string sub = body.Substring(0, i + 1);
+        body = body.Replace(sub, "").Trim();
+
+        //removes all the unnecesasry stuff
+        sub = sub.Replace(">content(", "").Replace("\"", "").Replace("<","").Trim();
+
+        //assignts the other parameters
+        string[] subs = sub.Split(')');
+        first = subs[0].Trim();
+        second = subs[1].Trim();
+    }
+
+    static string picture(ref string body)
+    {
+        //finds the end of the content section
+        int i = 0;
+        while (body[i] != '<') { i++; }
+
+        //copies the content
+        string sub = body.Substring(0, i + 1);
+        body = body.Replace(sub, "").Trim();
+
+        //removes all the unnecessary stuff
+        sub = sub.Replace(">picture(", "").Replace("<", "").Trim();
+        string[] subs = sub.Split(')');
+        return "<img src=\"" + subs[1].Trim() + "\" style=\"" + subs[0].Trim() + ";\"></img>";
     }
 }
