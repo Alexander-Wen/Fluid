@@ -194,7 +194,7 @@ class Fluid
 
         wf.WriteLine("<html>");
         wf.WriteLine("<head>");
-        wf.WriteLine("<META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL=/" + b.Menu + "/index.html\">");
+        wf.WriteLine("<META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL=/" + b.Menu.Replace(" ", "-") + "\">");
         wf.WriteLine("</head>");
         wf.WriteLine("</html>");
 
@@ -206,7 +206,7 @@ class Fluid
             BodyNode bod = list[i].returnFirst().Data as BodyNode;
 
             //make a new folder
-            string outFile = bod.Menu + @"\";
+            string outFile = bod.Menu.Replace(" ", "-") + @"\";
             Directory.CreateDirectory(outFile);
             //make the index file
             outFile += @"index.html";
@@ -234,7 +234,7 @@ class Fluid
                         }
                         else
                         {
-                            writeFile.WriteLine("<li><a href=\"../" + tempBody.Menu + "\">" + tempBody.Menu + "</a></li>");
+                            writeFile.WriteLine("<li><a href=\"../" + tempBody.Menu.Replace(" ", "-") + "\">" + tempBody.Menu + "</a></li>");
                         }
                     }
                 }
