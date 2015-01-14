@@ -234,7 +234,7 @@ class Fluid
                         }
                         else
                         {
-                            writeFile.WriteLine("<li><a href=\"../" + tempBody.Menu + "/index.html\">" + tempBody.Menu + "</a></li>");
+                            writeFile.WriteLine("<li><a href=\"../" + tempBody.Menu + "\">" + tempBody.Menu + "</a></li>");
                         }
                     }
                 }
