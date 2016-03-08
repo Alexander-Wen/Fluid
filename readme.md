@@ -1,5 +1,4 @@
 This program takes a general template file, and a body file and merges it into a single functioning website.
-alexanderwen.me was created using this program
 go into the example folder and run Fluid.exe for an example of this program
 
 
